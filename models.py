@@ -1,7 +1,6 @@
 from pydantic import BaseModel, validator
 from typing import Dict, Optional
 
-
 class LocationParams(BaseModel):
     latitude: float
     longitude: float
@@ -17,19 +16,6 @@ class LocationParams(BaseModel):
         if not -180 <= v <= 180:
             raise ValueError('Longitude must be between -180 and 180')
         return v
-
-
-class PushSubscription(BaseModel):
-    endpoint: str
-    keys: Dict[str, str]
-
-
-class NotificationRequest(BaseModel):
-    subscription: PushSubscription
-    latitude: float
-    longitude: float
-    user_id: Optional[str] = None
-
 
 class ForecastDay(BaseModel):
     date: str
