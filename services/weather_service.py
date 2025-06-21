@@ -85,7 +85,7 @@ class WeatherService:
         }
         
         precipitation_days = sum(1 for code in weather_codes if self.is_precipitation_day(code))
-        weather_summary = "z opadami" if precipitation_days >= 4 else "bez opadów"
+        weather_summary = "with precipitation" if precipitation_days >= 4 else "without precipitation"
         
         return WeekSummary(
             average_pressure=round(avg_pressure, 1),
