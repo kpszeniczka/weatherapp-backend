@@ -1,9 +1,10 @@
 from pydantic import BaseModel, validator
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
 
 class LocationParams(BaseModel):
     latitude: float
     longitude: float
+    language: Optional[Literal["en", "pl"]] = "en"
     
     @validator('latitude')
     def validate_latitude(cls, v):
@@ -26,19 +27,11 @@ class ForecastDay(BaseModel):
     sunshine_hours: float
     solar_energy_kwh: float
 
-
 class WeekSummary(BaseModel):
     average_pressure: float
     average_sunshine_hours: float
     extreme_temperatures: Dict[str, float]
     weather_summary: str
+    weather_summary_en: str
+    weather_summary_pl: str
     precipitation_days: int
-
-
-class WeatherAlert(BaseModel):
-    date: str
-    message: str
-    severity: str
-    weather_code: int
-    temp_max: float
-    temp_min: float

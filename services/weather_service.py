@@ -9,10 +9,9 @@ from config import (
     WEATHER_CODE_DESCRIPTIONS,
     PRECIPITATION_CODES,
     OPEN_METEO_API_URL,
-    WEATHER_PARAMS
+    WEATHER_PARAMS,
 )
 from models import ForecastDay, WeekSummary
-
 
 class WeatherService:
     @staticmethod
@@ -22,6 +21,11 @@ class WeatherService:
     @staticmethod
     def is_precipitation_day(weather_code: int) -> bool:
         return weather_code in PRECIPITATION_CODES
+
+    @staticmethod
+    def get_weather_description(weather_code: int, language: str = "en") -> str:
+        descriptions = WEATHER_CODE_DESCRIPTIONS.get(language, WEATHER_CODE_DESCRIPTIONS["en"])
+        return descriptions.get(weather_code, "Unknown" if language == "en" else "Nieznany")
 
     async def fetch_weather_data(self, latitude: float, longitude: float) -> Dict[str, Any]:
         params = {
@@ -40,7 +44,7 @@ class WeatherService:
             except httpx.HTTPError as e:
                 raise HTTPException(status_code=500, detail=f"Error fetching weather data: {str(e)}")
 
-    async def get_forecast(self, latitude: float, longitude: float) -> List[ForecastDay]:
+    async def get_forecast(self, latitude: float, longitude: float, language: str = "en") -> List[ForecastDay]:
         weather_data = await self.fetch_weather_data(latitude, longitude)
         daily_data = weather_data["daily"]
         forecast_days = []
@@ -55,10 +59,16 @@ class WeatherService:
             sunshine_hours = sunshine_duration_seconds / 3600 if sunshine_duration_seconds else 0
             solar_energy = self.calculate_solar_energy(sunshine_hours)
             
+            weather_desc_en = self.get_weather_description(weather_code, "en")
+            weather_desc_pl = self.get_weather_description(weather_code, "pl")
+            weather_desc_current = self.get_weather_description(weather_code, language)
+            
             forecast_days.append(ForecastDay(
                 date=date,
                 weather_code=weather_code,
-                weather_description=WEATHER_CODE_DESCRIPTIONS.get(weather_code, "Unknown"),
+                weather_description=weather_desc_current,
+                weather_description_en=weather_desc_en,
+                weather_description_pl=weather_desc_pl,
                 temperature_max=temp_max,
                 temperature_min=temp_min,
                 sunshine_hours=round(sunshine_hours, 2),
@@ -67,7 +77,7 @@ class WeatherService:
         
         return forecast_days
 
-    async def get_week_summary(self, latitude: float, longitude: float) -> WeekSummary:
+    async def get_week_summary(self, latitude: float, longitude: float, language: str = "en") -> WeekSummary:
         weather_data = await self.fetch_weather_data(latitude, longitude)
         daily_data = weather_data["daily"]
         
@@ -85,12 +95,17 @@ class WeatherService:
         }
         
         precipitation_days = sum(1 for code in weather_codes if self.is_precipitation_day(code))
-        weather_summary = "with precipitation" if precipitation_days >= 4 else "without precipitation"
+        
+        weather_summary_en = "with precipitation" if precipitation_days >= 4 else "without precipitation"
+        weather_summary_pl = "z opadami" if precipitation_days >= 4 else "bez opadów"
+        weather_summary = weather_summary_pl if language == "pl" else weather_summary_en
         
         return WeekSummary(
             average_pressure=round(avg_pressure, 1),
             average_sunshine_hours=round(avg_sunshine_hours, 2),
             extreme_temperatures=extreme_temps,
             weather_summary=weather_summary,
+            weather_summary_en=weather_summary_en,
+            weather_summary_pl=weather_summary_pl,
             precipitation_days=precipitation_days
         )
